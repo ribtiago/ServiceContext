@@ -1,7 +1,6 @@
 //
 //  ServiceContext.swift
 //
-//
 
 import Foundation
 
@@ -57,7 +56,7 @@ public class ServiceContext {
     
     public func request<DecodableObject: Decodable, EncodableObject: Encodable>(_ endpoint: Endpoint, body: EncodableObject) async throws -> DecodableObject {
         var request = try self.buildBaseRequest(for: endpoint)
-        
+        print("request \(request.allHTTPHeaderFields)")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.dataEncodingStrategy = .base64
@@ -68,13 +67,19 @@ public class ServiceContext {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = httpBody
         
+        print("body \(String(data: httpBody, encoding: .utf8))")
+        
         let (data, response) = try await self.urlSession.data(for: request)
+        print("response \(response)")
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
+        print("http response \(httpResponse)")
+        print("code \(httpResponse.statusCode)")
         guard case 200..<300 = httpResponse.statusCode else {
             throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
         }
+        print("data \(String(data: data, encoding: .utf8))")
         
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -82,17 +87,24 @@ public class ServiceContext {
     }
     
     private func buildBaseRequest(for endpoint: Endpoint) throws -> URLRequest {
-        var urlComponents = URLComponents(string: self.baseURL + endpoint.path)
+        guard var urlComponents = URLComponents(string: self.baseURL + endpoint.path) else {
+            throw ServiceContext.Error.urlError
+        }
+        
+        urlComponents.host = [endpoint.subdomain, urlComponents.host]
+            .compactMap { $0 }
+            .joined(separator: ".")
+        
         if let queryItems = endpoint.queryItems?.map({ URLQueryItem(name: $0.key, value: $0.value) }) {
-            if urlComponents?.queryItems != nil {
-                urlComponents?.queryItems?.append(contentsOf: queryItems)
+            if urlComponents.queryItems != nil {
+                urlComponents.queryItems?.append(contentsOf: queryItems)
             }
             else {
-                urlComponents?.queryItems = queryItems
+                urlComponents.queryItems = queryItems
             }
         }
         
-        guard let url = urlComponents?.url else {
+        guard let url = urlComponents.url else {
             throw ServiceContext.Error.urlError
         }
         

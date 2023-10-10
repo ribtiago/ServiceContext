@@ -15,6 +15,7 @@ public protocol Endpoint {
     var path: String { get }
     var method: HTTPMethod { get }
     var usesToken: Bool { get }
+    var subdomain: String? { get }
     var additionalHeaders: [String: String]? { get }
     var queryItems: [String: String]? { get }
 }
@@ -22,6 +23,10 @@ public protocol Endpoint {
 public extension Endpoint {
     var usesToken: Bool {
         return false
+    }
+    
+    var subdomain: String? {
+        return nil
     }
     
     var additionalHeaders: [String: String]? {
