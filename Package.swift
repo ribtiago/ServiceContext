@@ -4,14 +4,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "ServiceContext",
+    name: "ServiceContextKit",
     platforms: [.iOS(.v14), .macOS(.v12)],
     products: [
         .library(
-            name: "ServiceContext",
-            targets: ["ServiceContext"]),
+            name: "ServiceContextKit",
+            targets: ["ServiceContextKit"]),
     ],
     targets: [
-        .target(name: "ServiceContext")
+        .target(name: "ServiceContextKit")
     ]
 )
