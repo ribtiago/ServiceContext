@@ -28,9 +28,15 @@ public class ServiceContext {
     }
     
     public func request(_ endpoint: Endpoint) async throws {
+        #if DEBUG
+        print("Requesting endpoint \(endpoint)")
+        #endif
         let request = try self.buildBaseRequest(for: endpoint)
-        let (_, response) = try await self.urlSession.data(for: request)
+        let (data, response) = try await self.urlSession.data(for: request)
         
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
@@ -43,6 +49,9 @@ public class ServiceContext {
         let request = try self.buildBaseRequest(for: endpoint)
         let (data, response) = try await self.urlSession.data(for: request)
         
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
@@ -57,6 +66,9 @@ public class ServiceContext {
     public func request<DecodableObject: Decodable, EncodableObject: Encodable>(_ endpoint: Endpoint, body: EncodableObject) async throws -> DecodableObject {
         var request = try self.buildBaseRequest(for: endpoint)
         
+        #if DEBUG
+        print("Requesting endpoint \(endpoint)")
+        #endif
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.dataEncodingStrategy = .base64
@@ -66,8 +78,15 @@ public class ServiceContext {
         
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = httpBody
-        
+    
+        #if DEBUG
+        print("Requesting body: \(String(data: httpBody, encoding: .utf8) ?? "")")
+        #endif
         let (data, response) = try await self.urlSession.data(for: request)
+        
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
