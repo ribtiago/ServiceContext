@@ -18,6 +18,7 @@ public protocol Endpoint {
     var subdomain: String? { get }
     var additionalHeaders: [String: String]? { get }
     var queryItems: [String: String]? { get }
+    var timeoutInterval: TimeInterval? { get }
 }
 
 public extension Endpoint {
@@ -34,6 +35,10 @@ public extension Endpoint {
     }
     
     var queryItems: [String: String]? {
+        return nil
+    }
+    
+    var timeoutInterval: TimeInterval? {
         return nil
     }
 }

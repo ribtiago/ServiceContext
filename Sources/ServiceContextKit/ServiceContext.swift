@@ -125,6 +125,10 @@ public class ServiceContext {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         
+        if let timeoutInterval = endpoint.timeoutInterval {
+            request.timeoutInterval = timeoutInterval
+        }
+        
         if endpoint.usesToken {
             guard let token else {
                 throw ServiceContext.Error.tokenNotFound
