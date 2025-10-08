@@ -45,22 +45,6 @@ public class ServiceContext {
         }
     }
     
-    public func request(_ endpoint: Endpoint) async throws -> Data {
-        let request = try self.buildBaseRequest(for: endpoint)
-        let (data, response) = try await self.urlSession.data(for: request)
-        
-        #if DEBUG
-        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
-        #endif
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        guard case 200..<300 = httpResponse.statusCode else {
-            throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
-        }
-        return data
-    }
-    
     public func request<DecodableObject: Decodable>(_ endpoint: Endpoint) async throws -> DecodableObject {
         let request = try self.buildBaseRequest(for: endpoint)
         let (data, response) = try await self.urlSession.data(for: request)
@@ -77,41 +61,6 @@ public class ServiceContext {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(DecodableObject.self, from: data)
-    }
-    
-    public func request<EncodableObject: Encodable>(_ endpoint: Endpoint, body: EncodableObject) async throws -> Data {
-        var request = try self.buildBaseRequest(for: endpoint)
-        
-        #if DEBUG
-        print("Requesting endpoint \(endpoint)")
-        #endif
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.dataEncodingStrategy = .base64
-        guard let httpBody = try? encoder.encode(body) else {
-            throw ServiceContext.Error.encodingError
-        }
-        
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = httpBody
-    
-        #if DEBUG
-        print("Requesting body: \(String(data: httpBody, encoding: .utf8) ?? "")")
-        #endif
-        let (data, response) = try await self.urlSession.data(for: request)
-        
-        #if DEBUG
-        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
-        #endif
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        
-        guard case 200..<300 = httpResponse.statusCode else {
-            throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
-        }
-        
-        return data
     }
     
     public func request<DecodableObject: Decodable, EncodableObject: Encodable>(_ endpoint: Endpoint, body: EncodableObject) async throws -> DecodableObject {
@@ -149,6 +98,57 @@ public class ServiceContext {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(DecodableObject.self, from: data)
+    }
+    
+    public func requestData(_ endpoint: Endpoint) async throws -> Data {
+        let request = try self.buildBaseRequest(for: endpoint)
+        let (data, response) = try await self.urlSession.data(for: request)
+        
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        guard case 200..<300 = httpResponse.statusCode else {
+            throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
+        }
+        return data
+    }
+    
+    public func requestData<EncodableObject: Encodable>(_ endpoint: Endpoint, body: EncodableObject) async throws -> Data {
+        var request = try self.buildBaseRequest(for: endpoint)
+        
+        #if DEBUG
+        print("Requesting endpoint \(endpoint)")
+        #endif
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.dataEncodingStrategy = .base64
+        guard let httpBody = try? encoder.encode(body) else {
+            throw ServiceContext.Error.encodingError
+        }
+        
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = httpBody
+    
+        #if DEBUG
+        print("Requesting body: \(String(data: httpBody, encoding: .utf8) ?? "")")
+        #endif
+        let (data, response) = try await self.urlSession.data(for: request)
+        
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        
+        guard case 200..<300 = httpResponse.statusCode else {
+            throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
+        }
+        
+        return data
     }
     
     private func buildBaseRequest(for endpoint: Endpoint) throws -> URLRequest {
