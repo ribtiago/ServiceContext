@@ -100,6 +100,46 @@ public class ServiceContext {
         return try decoder.decode(DecodableObject.self, from: data)
     }
     
+    public func request<DecodableObject: Decodable>(_ endpoint: Endpoint, form: [String: String]) async throws -> DecodableObject {
+        var request = try self.buildBaseRequest(for: endpoint)
+        
+        #if DEBUG
+        print("Requesting endpoint \(endpoint)")
+        #endif
+        
+        guard
+            let httpBody = form
+                .map({ "\($0)=\($1)" })
+                .joined(separator: "&")
+                .data(using: .utf8)
+        else {
+            throw ServiceContext.Error.encodingError
+        }
+        
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = httpBody
+        
+        #if DEBUG
+        print("Requesting body: \(String(data: httpBody, encoding: .utf8) ?? "")")
+        #endif
+        let (data, response) = try await self.urlSession.data(for: request)
+        
+        #if DEBUG
+        print("Response:\nStatus code: \((response as? HTTPURLResponse)?.statusCode ?? -1)\nResponse data:\(String(data: data, encoding: .utf8) ?? "")")
+        #endif
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        
+        guard case 200..<300 = httpResponse.statusCode else {
+            throw ServiceContext.Error.httpError(code: httpResponse.statusCode)
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(DecodableObject.self, from: data)
+    }
+    
     public func requestData(_ endpoint: Endpoint) async throws -> Data {
         let request = try self.buildBaseRequest(for: endpoint)
         let (data, response) = try await self.urlSession.data(for: request)
